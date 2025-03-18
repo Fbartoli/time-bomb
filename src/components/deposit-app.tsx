@@ -5,7 +5,7 @@ import { AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { User, ScrollText, Info } from "lucide-react"
+import { User, ScrollText, Info, Bookmark, BookmarkCheck } from "lucide-react"
 import Image from "next/image"
 import DepositAnimation from "./deposit-animation"
 import CountdownTimer from "./countdown-timer"
@@ -13,30 +13,30 @@ import { useAccount, useReadContracts, useSendTransaction, useWaitForTransaction
 import { depositAbi } from "@/lib/abi/deposit"
 import { encodeFunctionData, erc20Abi, formatUnits, parseUnits } from "viem"
 import { truncateAddress } from "@/lib/truncateAddress"
-import { config } from '@/components/providers/WagmiProvider';
-import { sdk } from "@farcaster/frame-sdk";
+import sdk, {type Context} from "@farcaster/frame-sdk";
+import { toast } from "sonner"
 
 export default function DepositApp() {
-    const [isMounted, setIsMounted] = useState(false);
-    const { address, isConnected } = useAccount()
+    const { address } = useAccount()
 
     const [activeTab, setActiveTab] = useState("deposit")
     const [showAnimation, setShowAnimation] = useState(false)
     const [isSDKLoaded, setIsSDKLoaded] = useState(false);
     const [txHash, setTxHash] = useState<string | null>(null);
     const [approvalTxHash, setApprovalTxHash] = useState<string | null>(null);
-    const { disconnect } = useDisconnect();
-    const { connect } = useConnect();
+    const [isFrameAdded, setIsFrameAdded] = useState(false);
     const chainId = useChainId()
-    const { switchChain } = useSwitchChain()
-    const { reconnect } = useReconnect()
     const { sendTransaction, error: sendTxError, isError: isSendTxError } = useSendTransaction();
 
-    const renderError = (error: Error | null) => {
-        alert(error)
-        if (!error) return null;
-        return <div className="text-red-500 text-xs mt-1">{error.message}</div>;
-    };
+    // Watch for errors and show toast
+    useEffect(() => {
+        if (isSendTxError && sendTxError) {
+            toast.error(sendTxError.message, {
+                description: "Please try again",
+                duration: 4000,
+            })
+        }
+    }, [isSendTxError, sendTxError])
 
     // Watch for deposit transaction confirmation
     const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
@@ -47,12 +47,6 @@ export default function DepositApp() {
     const { isLoading: isApprovalConfirming, isSuccess: isApprovalConfirmed } = useWaitForTransactionReceipt({
         hash: approvalTxHash as `0x${string}`,
     });
-
-
-    // Ensure component is mounted before doing any client-side operations
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
 
     // Contract read configuration - memoized to prevent unnecessary re-renders
     const contractConfig = useMemo(() => ({
@@ -98,7 +92,7 @@ export default function DepositApp() {
 
     // Use the memoized configuration for contract reads - only run when component is mounted
     const { data, isLoading, isError, refetch } = useReadContracts(
-        isMounted ? contractConfig : { contracts: [] }
+        contractConfig
     );
 
     // Memoize the processed contract data to prevent unnecessary re-renders
@@ -120,7 +114,7 @@ export default function DepositApp() {
             balance: '0'
         };
 
-        if (!isMounted || !data) return result;
+        if (!data) return result;
 
         // Process totalDeposited
         if (data[0]?.status === 'success' && data[0]?.result !== undefined) {
@@ -154,7 +148,7 @@ export default function DepositApp() {
         }
 
         return result;
-    }, [data, address, isMounted]);
+    }, [data, address]);
 
     // Load SDK only on client-side
     useEffect(() => {
@@ -165,9 +159,7 @@ export default function DepositApp() {
                 setIsSDKLoaded(true);
 
                 // Only call ready() after data is loaded
-                if (!isLoading) {
-                    sdk.actions.ready();
-                }
+                sdk.actions.ready();
             } catch (error) {
                 console.error("Error initializing SDK:", error);
             }
@@ -213,6 +205,37 @@ export default function DepositApp() {
         return () => clearInterval(interval);
     }, [refetch]);
 
+    // Check if frame is already added
+    useEffect(() => {
+        const checkFrameStatus = async () => {
+            try {
+                const context = await sdk.context;
+                if (context?.client?.added) {
+                    setIsFrameAdded(true);
+                }
+            } catch (error) {
+                console.error("Failed to check frame status:", error);
+            }
+        };
+
+        checkFrameStatus();
+    }, []);
+
+    const handleBookmark = async () => {
+        try {
+            await sdk.actions.addFrame();
+            setIsFrameAdded(true);
+            toast.success("Frame bookmarked!", {
+                description: "You can now easily access Time Tomb anytime",
+            });
+        } catch (error) {
+            console.error("Failed to bookmark:", error);
+            toast.error("Failed to bookmark", {
+                description: "Please try again",
+            });
+        }
+    };
+
     // Memoize transaction handlers to prevent unnecessary recreations
     const handleAllowance = () => {
         const data = encodeFunctionData({
@@ -229,12 +252,8 @@ export default function DepositApp() {
             value: BigInt(0),
         }, {
             onSuccess: (hash) => {
-                alert("Approval successful")
                 setApprovalTxHash(hash);
             },
-            onError: (error) => {
-                alert(error)
-            }
         });
     }
 
@@ -256,39 +275,9 @@ export default function DepositApp() {
         });
     }, [sendTransaction]);
 
-    // Return a basic loading state during SSR and initial mount
-    if (!isMounted) {
-        return (
-            <div className="w-full max-w-md mx-auto relative">
-                <Card className="border-0 bg-gradient-to-b from-zinc-900 to-black text-white shadow-[0_0_15px_rgba(255,64,0,0.15)]">
-                    <CardHeader className="pb-2">
-                        <div className="flex items-center justify-between">
-                            <CardTitle className="text-2xl font-bold flex items-center gap-2">
-                                <Image
-                                    src="/logo.png"
-                                    alt="Time Tomb Logo"
-                                    width={24}
-                                    height={24}
-                                    className="object-contain"
-                                />
-                                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#FF4000] to-[#FD9D00]">
-                                    Time Tomb
-                                </span>
-                            </CardTitle>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="min-h-[400px] flex items-center justify-center">
-                        <p className="text-zinc-400">Loading application...</p>
-                    </CardContent>
-                </Card>
-            </div>
-        );
-    }
-
     return (
         <div className="w-full max-w-md mx-auto relative">
             <AnimatePresence>{showAnimation && <DepositAnimation />}</AnimatePresence>
-            {isSendTxError && renderError(sendTxError)}
             <Card className="border-0 bg-gradient-to-b from-zinc-900 to-black text-white shadow-[0_0_15px_rgba(255,64,0,0.15)]">
                 <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
@@ -304,25 +293,15 @@ export default function DepositApp() {
                                 Time Tomb
                             </span>
                         </CardTitle>
-                        <Button
-                            onClick={() =>
-                                isConnected
-                                    ? disconnect()
-                                    : connect({ connector: config.connectors[0] })
-                            }
-                        >
-                            {isConnected ? 'Disconnect' : 'Connect'}
-                        </Button>
-                        <Button
-                            onClick={() => {
-                                const newChainId = chainId === 84532 ? 8453 : 84532
-                                switchChain({ chainId: newChainId })
-                                reconnect()
-                            }
-                            }
-                        >
-                            Switch to Base
-                        </Button>
+                        {!isFrameAdded && (
+                            <Button
+                                onClick={handleBookmark}
+                                className="bg-gradient-to-r from-[#FF4000] to-[#FD9D00] hover:from-[#E53900] hover:to-[#E89000] text-white shadow-lg shadow-[#FF4000]/20 transition-all hover:shadow-[#FF4000]/40 hover:scale-[1.02] font-medium"
+                            >
+                                <Bookmark className="h-4 w-4" />
+                                Save
+                            </Button>
+                        )}
                     </div>
                 </CardHeader>
 
@@ -349,12 +328,7 @@ export default function DepositApp() {
                                 </h2>
                             </div>
 
-                            {/* Loading/Error States */}
-                            {isLoading && (
-                                <div className="text-center py-2">
-                                    <p className="text-zinc-400">Loading contract data...</p>
-                                </div>
-                            )}
+                            {/* Error States */}
 
                             {isError && (
                                 <div className="text-center py-2">
@@ -381,7 +355,7 @@ export default function DepositApp() {
                                         {isConfirming ? 'Confirming Deposit...' : 'Deposit 1 USDC'}
                                     </Button>
                                 )}
-                                {address && allowance < 1 && Number(balance) > 0 && (
+                                {address && endTime > 0 && allowance < 1 && Number(balance) > 0 && (
                                     <Button
                                         onClick={handleAllowance}
                                         disabled={isApprovalConfirming || isConfirming}
@@ -390,7 +364,7 @@ export default function DepositApp() {
                                         {isApprovalConfirming ? 'Confirming Allowance...' : 'Approve USDC'}
                                     </Button>
                                 )}
-                                {address && Number(balance) <= 0 && (
+                                {address && endTime > 0 && Number(balance) <= 0 && (
                                     <Button
                                         disabled
                                         className="w-full py-6 text-lg font-bold bg-zinc-700 text-zinc-400"
@@ -398,12 +372,24 @@ export default function DepositApp() {
                                         Insufficient USDC Balance
                                     </Button>
                                 )}
+                                {isConfirmed && (
+                                <div className="bg-zinc-800/50 rounded-xl p-4">
+                                    <p className="text-zinc-400 text-xs mb-2 flex items-center gap-1">
+                                         <Button
+                                         onClick={() => {
+                                            sdk.actions.openUrl(`https://warpcast.com/~/compose?text=Hello%20world!`)
+                                        }}
+                                        className="w-full py-6 text-lg font-bold bg-gradient-to-r from-[#FF4000] to-[#FD9D00] hover:from-[#E53900] hover:to-[#E89000] text-white shadow-lg shadow-[#FF4000]/20 transition-all hover:shadow-[#FF4000]/40 hover:scale-[1.02]"
+                                        >share</Button>
+                                    </p>
+                                </div>
+                            )}
                             </div>
 
                             {/* Last Depositor */}
                             <div className="bg-zinc-800/50 rounded-xl p-4">
                                 <p className="text-zinc-400 text-xs mb-2 flex items-center gap-1">
-                                    <User className="h-3 w-3" /> Last Depositor
+                                    <User className="h-3 w-3" /> Current Leader
                                 </p>
                                 <div className="flex items-center gap-3">
                                     <div>
@@ -411,6 +397,7 @@ export default function DepositApp() {
                                     </div>
                                 </div>
                             </div>
+                            
                         </TabsContent>
 
                         <TabsContent value="rules" className="space-y-4 mt-6">

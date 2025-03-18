@@ -1,7 +1,10 @@
 'use client';
 
-import DepositApp from '@/components/deposit-app';
+import dynamic from 'next/dynamic';
 
+const DepositApp = dynamic(() => import('@/components/deposit-app'), {
+  ssr: false,
+});
 export default function Home() {
   
   return (

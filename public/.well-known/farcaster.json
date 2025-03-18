@@ -1,0 +1,18 @@
+{
+  "accountAssociation": {
+    "header": "eyJmaWQiOjk0NDAyNSwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweEQ0QTZmMjIzY0Q2NzkwY0RkNmFmNjI3NzM5Y2E3YjNBNDlFMDBiNGEifQ",
+    "payload": "eyJkb21haW4iOiJkZThhNTVkZDYzM2Uubmdyb2suYXBwIn0",
+    "signature": "MHg0YmJjYWEyNTNlZGE0YzZkMjhmYTVmOGUxYzUzMzljMTcxNGRhYzNkYTQ4MjA1MWJlNTI0NGExZWJkNzJjZDhlNDU5OWMxNTFmOTMwNDYxNjU4MWI1YmJlYmExYTQ1Y2QwMDU2NjExM2I4NWE1Y2I1OWYwOTBiMTEwZmMxMjNmZTFj"
+  },
+  "frame": {
+    "version": "1",
+    "name": "Time Tomb",
+    "iconUrl": "https://de8a55dd633e.ngrok.app/logo.png",
+    "homeUrl": "https://de8a55dd633e.ngrok.app",
+    "imageUrl": "https://de8a55dd633e.ngrok.app/logo.png",
+    "buttonTitle": "Check this out",
+    "splashImageUrl": "https://de8a55dd633e.ngrok.app/logo.png",
+    "splashBackgroundColor": "#eeccff",
+    "webhookUrl": "https://de8a55dd633e.ngrok.app/api/webhook"
+  }
+}
