@@ -371,18 +371,6 @@ export default function DepositApp() {
                                         Insufficient USDC Balance
                                     </Button>
                                 )}
-                                {isConfirmed && (
-                                <div className="bg-zinc-800/50 rounded-xl p-4">
-                                    <p className="text-zinc-400 text-xs mb-2 flex items-center gap-1">
-                                         <Button
-                                         onClick={() => {
-                                            sdk.actions.openUrl(`https://warpcast.com/~/compose?text=Hello%20world!`)
-                                        }}
-                                        className="w-full py-6 text-lg font-bold bg-gradient-to-r from-[#FF4000] to-[#FD9D00] hover:from-[#E53900] hover:to-[#E89000] text-white shadow-lg shadow-[#FF4000]/20 transition-all hover:shadow-[#FF4000]/40 hover:scale-[1.02]"
-                                        >share</Button>
-                                    </p>
-                                </div>
-                            )}
                             </div>
 
                             {/* Last Depositor */}
