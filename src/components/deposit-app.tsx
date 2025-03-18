@@ -9,15 +9,17 @@ import { User, ScrollText, Info, Bookmark } from "lucide-react"
 import Image from "next/image"
 import DepositAnimation from "./deposit-animation"
 import CountdownTimer from "./countdown-timer"
-import { useAccount, useReadContracts, useSendTransaction, useWaitForTransactionReceipt, useChainId } from 'wagmi'
+import { useAccount, useReadContracts, useSendTransaction, useWaitForTransactionReceipt, useChainId, useConnect } from 'wagmi'
 import { depositAbi } from "@/lib/abi/deposit"
 import { encodeFunctionData, erc20Abi, formatUnits, parseUnits } from "viem"
 import { truncateAddress } from "@/lib/truncateAddress"
 import sdk from "@farcaster/frame-sdk";
 import { toast } from "sonner"
+import { config } from '@/components/providers/WagmiProvider';
 
 export default function DepositApp() {
-    const { address } = useAccount()
+    const { address, isConnected } = useAccount()
+    const { connect } = useConnect()
 
     const [activeTab, setActiveTab] = useState("deposit")
     const [showAnimation, setShowAnimation] = useState(false)
@@ -292,7 +294,14 @@ export default function DepositApp() {
                                 Time Tomb
                             </span>
                         </CardTitle>
-                        {!isFrameAdded && (
+                        {!isConnected ? (
+                            <Button
+                                onClick={() => connect({ connector: config.connectors[0] })}
+                                className="bg-gradient-to-r from-[#FF4000] to-[#FD9D00] hover:from-[#E53900] hover:to-[#E89000] text-white shadow-lg shadow-[#FF4000]/20 transition-all hover:shadow-[#FF4000]/40 hover:scale-[1.02] font-medium"
+                            >
+                                Connect Wallet
+                            </Button>
+                        ) : !isFrameAdded && (
                             <Button
                                 onClick={handleBookmark}
                                 className="bg-gradient-to-r from-[#FF4000] to-[#FD9D00] hover:from-[#E53900] hover:to-[#E89000] text-white shadow-lg shadow-[#FF4000]/20 transition-all hover:shadow-[#FF4000]/40 hover:scale-[1.02] font-medium"
