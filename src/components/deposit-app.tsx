@@ -5,15 +5,15 @@ import { AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { User, ScrollText, Info, Bookmark, BookmarkCheck } from "lucide-react"
+import { User, ScrollText, Info, Bookmark } from "lucide-react"
 import Image from "next/image"
 import DepositAnimation from "./deposit-animation"
 import CountdownTimer from "./countdown-timer"
-import { useAccount, useReadContracts, useSendTransaction, useWaitForTransactionReceipt, useChainId, useConnect, useDisconnect, useSwitchChain, useReconnect } from 'wagmi'
+import { useAccount, useReadContracts, useSendTransaction, useWaitForTransactionReceipt, useChainId } from 'wagmi'
 import { depositAbi } from "@/lib/abi/deposit"
 import { encodeFunctionData, erc20Abi, formatUnits, parseUnits } from "viem"
 import { truncateAddress } from "@/lib/truncateAddress"
-import sdk, {type Context} from "@farcaster/frame-sdk";
+import sdk from "@farcaster/frame-sdk";
 import { toast } from "sonner"
 
 export default function DepositApp() {
