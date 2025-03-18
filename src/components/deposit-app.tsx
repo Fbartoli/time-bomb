@@ -91,7 +91,7 @@ export default function DepositApp() {
     }), [address]);
 
     // Use the memoized configuration for contract reads - only run when component is mounted
-    const { data, isLoading: _isLoading, isError, refetch } = useReadContracts(
+    const { data, isError, refetch } = useReadContracts(
         contractConfig
     );
 
