@@ -1,0 +1,38 @@
+{
+  "extends": [
+    "@vercel/style-guide/eslint/node",
+    "@vercel/style-guide/eslint/typescript",
+    "@vercel/style-guide/eslint/browser",
+    "@vercel/style-guide/eslint/react",
+    "@vercel/style-guide/eslint/next",
+    "eslint-config-turbo"
+  ],
+  "plugins": ["@typescript-eslint", "react-hooks"],
+  "rules": {
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/no-unused-vars": "warn",
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
+    "import/no-default-export": "off",
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "@typescript-eslint/no-unsafe-assignment": "off",
+    "@typescript-eslint/no-unsafe-member-access": "off",
+    "@typescript-eslint/no-unsafe-call": "off"
+  },
+  "parserOptions": {
+    "project": "./tsconfig.json"
+  },
+  "root": true,
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  },
+  "ignorePatterns": [
+    "node_modules/",
+    "dist/",
+    ".next/",
+    "*.config.js",
+    "*.config.ts"
+  ]
+} 

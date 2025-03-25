@@ -109,11 +109,7 @@ export default function DepositApp() {
     // Memoize the processed contract data to prevent unnecessary re-renders
     const {
         totalDeposited,
-        endTime,
-        lastDepositor,
-        allowance,
-        balance
-    } = useMemo(() => {
+        lastDepositor    } = useMemo(() => {
         // Default values
         const result = {
             totalDeposited: '0',
@@ -307,7 +303,7 @@ export default function DepositApp() {
             data,
             value: BigInt(0),
         }, {
-            onSuccess: (data) => {
+            onSuccess: () => {
                 toast.success("Withdrawal successful!", {
                     description: "Your funds have been sent to your wallet",
                 });
