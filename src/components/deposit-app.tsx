@@ -109,7 +109,8 @@ export default function DepositApp() {
     // Memoize the processed contract data to prevent unnecessary re-renders
     const {
         totalDeposited,
-        lastDepositor    } = useMemo(() => {
+        lastDepositor    
+    } = useMemo(() => {
         // Default values
         const result = {
             totalDeposited: '0',
@@ -437,11 +438,12 @@ export default function DepositApp() {
                                 <CountdownTimer endTime={gameEndTime} />
 
                                 {/* Total Deposited */}
-                                <div className="text-center py-6">
+                                <div className="text-center py-6 bg-zinc-800/50 rounded-xl">
                                     <p className="text-zinc-400 text-sm mb-1">Total Deposited</p>
                                     <h2 className="text-5xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-[#FF4000] via-[#FF7300] to-[#FD9D00]">
                                         ${totalDeposited}
                                     </h2>
+                                    <p className="text-zinc-400 text-xs mt-2">USDC</p>
                                 </div>
 
                                 {/* Error States */}
@@ -462,10 +464,19 @@ export default function DepositApp() {
                                     <p className="text-zinc-400 text-xs mb-2 flex items-center gap-1">
                                         <User className="h-3 w-3" /> Current Leader
                                     </p>
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center justify-between">
                                         <div>
-                                            {lastDepositor !== address ? <p className="font-medium">{truncateAddress(lastDepositor)}</p> : <p className="font-medium">You are the leader!</p>}
+                                            {lastDepositor !== address ? (
+                                                <p className="font-medium text-[#FD9D00]">{truncateAddress(lastDepositor)}</p>
+                                            ) : (
+                                                <p className="font-medium text-[#FF4000]">You are the leader!</p>
+                                            )}
                                         </div>
+                                        {lastDepositor !== "0x0000000000000000000000000000000000000000" && (
+                                            <div className="text-xs text-zinc-400">
+                                                Last Deposit
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </TabsContent>
