@@ -432,8 +432,8 @@ export default function DepositApp() {
                             </TabsTrigger>
                         </TabsList>
 
-                        <div className="min-h-[450px]">
-                            <TabsContent value="deposit" className="space-y-6 mt-6 data-[state=inactive]:hidden">
+                        <div className="h-[520px]">
+                            <TabsContent value="deposit" className="space-y-6 mt-6 data-[state=inactive]:hidden h-full">
                                 {/* Countdown Timer */}
                                 <CountdownTimer endTime={gameEndTime} />
 
@@ -481,14 +481,14 @@ export default function DepositApp() {
                                 </div>
                             </TabsContent>
 
-                            <TabsContent value="rules" className="space-y-6 mt-6 data-[state=inactive]:hidden">
-                                <div className="bg-zinc-800/50 rounded-xl p-4">
+                            <TabsContent value="rules" className="space-y-6 mt-6 data-[state=inactive]:hidden h-full">
+                                <div className="bg-zinc-800/50 rounded-xl p-4 h-full flex flex-col">
                                     <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                                         <ScrollText className="h-5 w-5 text-[#FF4000]" />
                                         The Time Tomb
                                     </h3>
 
-                                    <div className="space-y-4 text-sm">
+                                    <div className="space-y-4 text-sm flex-grow">
                                         <p className="text-[#FD9D00] font-bold">Time is Money – A Social Experiment</p>
 
                                         <ol className="space-y-4 text-zinc-300 list-decimal pl-4">
@@ -502,15 +502,15 @@ export default function DepositApp() {
                                                 When the timer hits 0 minutes and 0 seconds, the final leader is decided. They can withdraw all deposits that accumulated in the time tomb.
                                             </li>
                                         </ol>
-                                    </div>
-                                </div>
 
-                                <div className="bg-[#FF4000]/10 border border-[#FF4000]/20 rounded-xl p-4">
-                                    <div className="flex gap-3">
-                                        <Info className="h-5 w-5 text-[#FF4000] flex-shrink-0 mt-0.5" />
-                                        <p className="text-sm text-zinc-300">
-                                            <span className="font-bold text-[#FD9D00]">Pro Tip:</span> Watch the timer closely as it approaches zero. Timing your deposit strategically can make you the final leader!
-                                        </p>
+                                        <div className="bg-[#FF4000]/10 border border-[#FF4000]/20 rounded-xl p-4 mt-6">
+                                            <div className="flex gap-3">
+                                                <Info className="h-5 w-5 text-[#FF4000] flex-shrink-0 mt-0.5" />
+                                                <p className="text-sm text-zinc-300">
+                                                    <span className="font-bold text-[#FD9D00]">Pro Tip:</span> Watch the timer closely as it approaches zero. Timing your deposit strategically can make you the final leader!
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </TabsContent>
