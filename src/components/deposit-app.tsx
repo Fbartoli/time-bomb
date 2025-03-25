@@ -27,6 +27,10 @@ export default function DepositApp() {
     const [txHash, setTxHash] = useState<string | null>(null);
     const [approvalTxHash, setApprovalTxHash] = useState<string | null>(null);
     const [isFrameAdded, setIsFrameAdded] = useState(false);
+    const [gameEndTime, setGameEndTime] = useState(0);
+    const [remainingTime, setRemainingTime] = useState(0);
+    const [userAllowance, setUserAllowance] = useState(0);
+    const [userBalance, setUserBalance] = useState('0');
     const chainId = useChainId()
     const { sendTransaction, error: sendTxError, isError: isSendTxError } = useSendTransaction();
 
@@ -57,6 +61,11 @@ export default function DepositApp() {
                 address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`,
                 abi: depositAbi,
                 functionName: "totalDeposited",
+            },
+            {
+                address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`,
+                abi: depositAbi,
+                functionName: "getRemainingTime",
             },
             {
                 address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`,
@@ -109,6 +118,7 @@ export default function DepositApp() {
         const result = {
             totalDeposited: '0',
             endTime: 0,
+            remainingTime: 0,
             lastDepositor: '0x0000000000000000000000000000000000000000',
             contractBalance: '0',
             allowance: 0,
@@ -116,35 +126,44 @@ export default function DepositApp() {
         };
 
         if (!data) return result;
-
+        console.log(data)
         // Process totalDeposited
         if (data[0]?.status === 'success' && data[0]?.result !== undefined) {
             result.totalDeposited = formatUnits(data[0].result as bigint, 6);
         }
 
-        // Process gameEndTime
+        // Process remainingTime
         if (data[1]?.status === 'success' && data[1]?.result !== undefined) {
-            result.endTime = Number(data[1].result) * 1000;
+            result.remainingTime = Number(data[1].result) * 1000;
+            setRemainingTime(result.remainingTime);
+        }
+
+        // Process endTime
+        if (data[2]?.status === 'success' && data[2]?.result !== undefined) {
+            result.endTime = Number(data[2].result);
+            setGameEndTime(result.endTime);
         }
 
         // Process currentLeader
-        if (data[2]?.status === 'success' && data[2]?.result !== undefined) {
-            result.lastDepositor = data[2].result as `0x${string}`;
+        if (data[3]?.status === 'success' && data[3]?.result !== undefined) {
+            result.lastDepositor = data[3].result as `0x${string}`;
         }
 
         // Process contract balance
-        if (data[3]?.status === 'success' && data[3]?.result !== undefined) {
-            result.contractBalance = formatUnits(data[3].result as bigint, 6);
+        if (data[4]?.status === 'success' && data[4]?.result !== undefined) {
+            result.contractBalance = formatUnits(data[4].result as bigint, 6);
         }
 
         // Process allowance and balance only if we have an address
         if (address) {
-            if (data[4]?.status === 'success' && data[4]?.result !== undefined) {
-                result.allowance = Number(formatUnits(data[4].result as bigint, 6));
+            if (data[5]?.status === 'success' && data[5]?.result !== undefined) {
+                result.allowance = Number(formatUnits(data[5].result as bigint, 6));
+                setUserAllowance(result.allowance);
             }
 
-            if (data[5]?.status === 'success' && data[5]?.result !== undefined) {
-                result.balance = formatUnits(data[5].result as bigint, 6);
+            if (data[6]?.status === 'success' && data[6]?.result !== undefined) {
+                result.balance = formatUnits(data[6].result as bigint, 6);
+                setUserBalance(result.balance);
             }
         }
 
@@ -197,7 +216,7 @@ export default function DepositApp() {
         }
     }, [isApprovalConfirmed, refetch]);
 
-    // Auto-refresh data every 30 seconds - only when mounted
+    // Auto-refresh data every 10 seconds - only when mounted
     useEffect(() => {
         const interval = setInterval(() => {
             refetch();
@@ -276,6 +295,98 @@ export default function DepositApp() {
         });
     }, [sendTransaction]);
 
+    const handleWithdraw = useCallback(() => {
+        const data = encodeFunctionData({
+            abi: depositAbi,
+            functionName: "withdraw",
+            args: [],
+        });
+
+        sendTransaction({
+            to: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`,
+            data,
+            value: BigInt(0),
+        }, {
+            onSuccess: (data) => {
+                toast.success("Withdrawal successful!", {
+                    description: "Your funds have been sent to your wallet",
+                });
+            }
+        });
+    }, [sendTransaction]);
+
+    const getActionButton = () => {
+        if (!address) {
+            return (
+                <Button
+                    disabled
+                    className="w-full py-6 text-lg font-bold bg-zinc-700 text-zinc-400"
+                >
+                    Connect Wallet to Deposit
+                </Button>
+            );
+        }
+
+        // Game ended and current user is the winner
+        if (remainingTime === 0 && address === lastDepositor) {
+            return (
+                <Button
+                    onClick={handleWithdraw}
+                    className="w-full py-6 text-lg font-bold bg-gradient-to-r from-[#FF4000] to-[#FD9D00] hover:from-[#E53900] hover:to-[#E89000] text-white shadow-lg shadow-[#FF4000]/20 transition-all hover:shadow-[#FF4000]/40 hover:scale-[1.02]"
+                >
+                    Claim Winnings
+                </Button>
+            );
+        }
+
+        // Game ended but user is not the winner
+        if (remainingTime === 0) {
+            return (
+                <Button
+                    disabled
+                    className="w-full py-6 text-lg font-bold bg-zinc-700 text-zinc-400"
+                >
+                    Game Not Active
+                </Button>
+            );
+        }
+
+        if (Number(userBalance) < 1) {
+            return (
+                <Button
+                    disabled
+                    className="w-full py-6 text-lg font-bold bg-zinc-700 text-zinc-400"
+                >
+                    Insufficient USDC Balance
+                </Button>
+            );
+        }
+
+        const buttonClass = "w-full py-6 text-lg font-bold bg-gradient-to-r from-[#FF4000] to-[#FD9D00] hover:from-[#E53900] hover:to-[#E89000] text-white shadow-lg shadow-[#FF4000]/20 transition-all hover:shadow-[#FF4000]/40 hover:scale-[1.02]";
+
+        if (userAllowance < 1) {
+            return (
+                <Button
+                    onClick={handleAllowance}
+                    disabled={isApprovalConfirming || isConfirming}
+                    className={buttonClass}
+                >
+                    {isApprovalConfirming ? 'Confirming Allowance...' : 'Approve USDC'}
+                </Button>
+            );
+        }
+
+        return (
+            <Button
+                onClick={handleDeposit}
+                disabled={isConfirming || isApprovalConfirming}
+                className={buttonClass}
+            >
+                {isConfirming ? 'Confirming Deposit...' : 'Deposit 1 USDC'}
+            </Button>
+        );
+    };
+
     return (
         <div className="w-full max-w-md mx-auto relative">
             <AnimatePresence>{showAnimation && <DepositAnimation />}</AnimatePresence>
@@ -324,116 +435,94 @@ export default function DepositApp() {
                             </TabsTrigger>
                         </TabsList>
 
-                        <TabsContent value="deposit" className="space-y-6 mt-6">
-                            {/* Countdown Timer */}
-                            <CountdownTimer endTime={endTime} />
+                        <div className="min-h-[450px]">
+                            <TabsContent value="deposit" className="space-y-6 mt-6 data-[state=inactive]:hidden">
+                                {/* Countdown Timer */}
+                                <CountdownTimer endTime={gameEndTime} />
 
-                            {/* Total Deposited */}
-                            <div className="text-center py-6">
-                                <p className="text-zinc-400 text-sm mb-1">Total Deposited</p>
-                                <h2 className="text-5xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-[#FF4000] via-[#FF7300] to-[#FD9D00]">
-                                    ${totalDeposited}
-                                </h2>
-                            </div>
-
-                            {/* Error States */}
-
-                            {isError && (
-                                <div className="text-center py-2">
-                                    <p className="text-red-400">Error loading contract data. Please refresh.</p>
+                                {/* Total Deposited */}
+                                <div className="text-center py-6">
+                                    <p className="text-zinc-400 text-sm mb-1">Total Deposited</p>
+                                    <h2 className="text-5xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-[#FF4000] via-[#FF7300] to-[#FD9D00]">
+                                        ${totalDeposited}
+                                    </h2>
                                 </div>
-                            )}
 
-                            {/* Deposit Button */}
-                            <div className="pt-4">
-                                {!address && (
-                                    <Button
-                                        disabled
-                                        className="w-full py-6 text-lg font-bold bg-zinc-700 text-zinc-400"
-                                    >
-                                        Connect Wallet to Deposit
-                                    </Button>
-                                )}
-                                {address && allowance > 0 && Number(balance) > 0 && (
-                                    <Button
-                                        onClick={handleDeposit}
-                                        disabled={isConfirming || isApprovalConfirming}
-                                        className="w-full py-6 text-lg font-bold bg-gradient-to-r from-[#FF4000] to-[#FD9D00] hover:from-[#E53900] hover:to-[#E89000] text-white shadow-lg shadow-[#FF4000]/20 transition-all hover:shadow-[#FF4000]/40 hover:scale-[1.02]"
-                                    >
-                                        {isConfirming ? 'Confirming Deposit...' : 'Deposit 1 USDC'}
-                                    </Button>
-                                )}
-                                {address && endTime > 0 && allowance < 1 && Number(balance) > 0 && (
-                                    <Button
-                                        onClick={handleAllowance}
-                                        disabled={isApprovalConfirming || isConfirming}
-                                        className="w-full py-6 text-lg font-bold bg-gradient-to-r from-[#FF4000] to-[#FD9D00] hover:from-[#E53900] hover:to-[#E89000] text-white shadow-lg shadow-[#FF4000]/20 transition-all hover:shadow-[#FF4000]/40 hover:scale-[1.02]"
-                                    >
-                                        {isApprovalConfirming ? 'Confirming Allowance...' : 'Approve USDC'}
-                                    </Button>
-                                )}
-                                {address && endTime > 0 && Number(balance) <= 0 && (
-                                    <Button
-                                        disabled
-                                        className="w-full py-6 text-lg font-bold bg-zinc-700 text-zinc-400"
-                                    >
-                                        Insufficient USDC Balance
-                                    </Button>
-                                )}
-                            </div>
+                                {/* Error States */}
 
-                            {/* Last Depositor */}
-                            <div className="bg-zinc-800/50 rounded-xl p-4">
-                                <p className="text-zinc-400 text-xs mb-2 flex items-center gap-1">
-                                    <User className="h-3 w-3" /> Current Leader
-                                </p>
-                                <div className="flex items-center gap-3">
-                                    <div>
-                                        {lastDepositor !== address ? <p className="font-medium">{truncateAddress(lastDepositor)}</p> : <p className="font-medium">You are the leader!</p>}
+                                {isError && (
+                                    <div className="text-center py-2">
+                                        <p className="text-red-400">Error loading contract data. Please refresh.</p>
+                                    </div>
+                                )}
+
+                                {/* Deposit Button */}
+                                <div className="pt-4">
+                                    {getActionButton()}
+                                </div>
+
+                                {/* Last Depositor */}
+                                <div className="bg-zinc-800/50 rounded-xl p-4">
+                                    <p className="text-zinc-400 text-xs mb-2 flex items-center gap-1">
+                                        <User className="h-3 w-3" /> Current Leader
+                                    </p>
+                                    <div className="flex items-center gap-3">
+                                        <div>
+                                            {lastDepositor !== address ? <p className="font-medium">{truncateAddress(lastDepositor)}</p> : <p className="font-medium">You are the leader!</p>}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            
-                        </TabsContent>
+                            </TabsContent>
 
-                        <TabsContent value="rules" className="space-y-4 mt-6">
-                            <div className="bg-zinc-800/50 rounded-xl p-4">
-                                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                                    <ScrollText className="h-5 w-5 text-[#FF4000]" />
-                                    The Time Tomb
-                                </h3>
+                            <TabsContent value="rules" className="space-y-6 mt-6 data-[state=inactive]:hidden">
+                                <div className="bg-zinc-800/50 rounded-xl p-4">
+                                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                        <ScrollText className="h-5 w-5 text-[#FF4000]" />
+                                        The Time Tomb
+                                    </h3>
 
-                                <div className="space-y-4 text-sm">
-                                    <p className="text-[#FD9D00] font-bold">Time is Money – A Social Experiment</p>
+                                    <div className="space-y-4 text-sm">
+                                        <p className="text-[#FD9D00] font-bold">Time is Money – A Social Experiment</p>
 
-                                    <ol className="space-y-4 text-zinc-300 list-decimal pl-4">
-                                        <li>
-                                            Deposit 1 USDC into the time tomb → You become the leader.
-                                        </li>
-                                        <li>
-                                            The first deposit starts a timer of 3 days, subsequent deposits extend the timer by 5 minutes.
-                                        </li>
-                                        <li>
-                                            When the timer hits 0 minutes and 0 seconds, the final leader is decided. They can withdraw all deposits that accumulated in the time tomb.
-                                        </li>
-                                    </ol>
+                                        <ol className="space-y-4 text-zinc-300 list-decimal pl-4">
+                                            <li>
+                                                Deposit 1 USDC into the time tomb → you become the leader unless someone else deposits 1 USDC and becomes leader!
+                                            </li>
+                                            <li>
+                                                The first deposit starts a timer of 3 days, subsequent deposits extend the timer by 5 minutes.
+                                            </li>
+                                            <li>
+                                                When the timer hits 0 minutes and 0 seconds, the final leader is decided. They can withdraw all deposits that accumulated in the time tomb.
+                                            </li>
+                                        </ol>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div className="bg-[#FF4000]/10 border border-[#FF4000]/20 rounded-xl p-4">
-                                <div className="flex gap-3">
-                                    <Info className="h-5 w-5 text-[#FF4000] flex-shrink-0 mt-0.5" />
-                                    <p className="text-sm text-zinc-300">
-                                        <span className="font-bold text-[#FD9D00]">Pro Tip:</span> Watch the timer closely as it approaches zero. Timing your deposit strategically can make you the final leader!
-                                    </p>
+                                <div className="bg-[#FF4000]/10 border border-[#FF4000]/20 rounded-xl p-4">
+                                    <div className="flex gap-3">
+                                        <Info className="h-5 w-5 text-[#FF4000] flex-shrink-0 mt-0.5" />
+                                        <p className="text-sm text-zinc-300">
+                                            <span className="font-bold text-[#FD9D00]">Pro Tip:</span> Watch the timer closely as it approaches zero. Timing your deposit strategically can make you the final leader!
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
-                        </TabsContent>
+                            </TabsContent>
+                        </div>
                     </Tabs>
                 </CardContent>
 
                 <CardFooter className="pt-0 text-center text-xs text-zinc-500">
-                    <p className="w-full">Powered by The Time Tomb • Network: {chainId}</p>
+                    <div className="w-full flex flex-col items-center gap-2">
+                        <p>Powered by The Time Tomb • Network: {chainId}</p>
+                        <a
+                            href={`https://basescan.org/address/${process.env.NEXT_PUBLIC_CONTRACT_ADDRESS}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[#FF4000] hover:text-[#FD9D00] transition-colors underline underline-offset-4"
+                        >
+                            View Contract
+                        </a>
+                    </div>
                 </CardFooter>
             </Card>
         </div>

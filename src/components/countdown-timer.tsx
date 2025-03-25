@@ -21,7 +21,8 @@ export default function CountdownTimer({ endTime }: CountdownTimerProps) {
 
     const calculateTimeLeft = () => {
       const now = new Date().getTime()
-      const difference = new Date(endTime).getTime() - now
+      const difference = new Date(endTime * 1000).getTime() - now
+      console.log(difference)
 
       // Calculate total duration (24 hours in milliseconds)
       const totalDuration = 24 * 60 * 60 * 1000
