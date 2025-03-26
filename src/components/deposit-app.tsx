@@ -496,7 +496,7 @@ export default function DepositApp() {
                                                 Deposit 1 USDC into the time tomb → you become the leader unless someone else deposits 1 USDC and becomes leader!
                                             </li>
                                             <li>
-                                                The first deposit starts a timer of 3 days, subsequent deposits extend the timer by 5 minutes.
+                                                The first deposit starts a timer of 1 days, subsequent deposits extend the timer by 5 minutes.
                                             </li>
                                             <li>
                                                 When the timer hits 0 minutes and 0 seconds, the final leader is decided. They can withdraw all deposits that accumulated in the time tomb.
