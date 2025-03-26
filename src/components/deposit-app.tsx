@@ -521,14 +521,6 @@ export default function DepositApp() {
                 <CardFooter className="pt-0 text-center text-xs text-zinc-500">
                     <div className="w-full flex flex-col items-center gap-2">
                         <p>Powered by The Time Tomb • Network: {chainId}</p>
-                        <a
-                            href={`https://basescan.org/address/${process.env.NEXT_PUBLIC_CONTRACT_ADDRESS}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[#FF4000] hover:text-[#FD9D00] transition-colors underline underline-offset-4"
-                        >
-                            View Contract
-                        </a>
                     </div>
                 </CardFooter>
             </Card>
